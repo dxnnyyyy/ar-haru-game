@@ -1,11 +1,16 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import "./index.css";
-import App from "./App";
+
 import reportWebVitals from "./reportWebVitals";
+import MindARThreeViewer from "./components/mindar-three-viewer";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(<App tab="home" />);
+root.render(
+  <div className="container">
+    <MindARThreeViewer />
+  </div>
+);
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))
