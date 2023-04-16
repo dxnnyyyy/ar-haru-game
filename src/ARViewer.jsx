@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import { MindARThree } from "mind-ar/dist/mindar-image-three.prod.js";
-import ThreeCanvas from "./three-canvas";
+import ThreeCanvas from "./components/three-canvas";
 
-const MindARThreeViewer = () => {
+export default function ARViewer(props) {
+  const { socket } = props;
+
   const containerRef = useRef(null);
   const [mindarThree, setMindarThree] = useState();
 
@@ -29,9 +31,7 @@ const MindARThreeViewer = () => {
 
   return (
     <div style={{ width: "100%", height: "100%" }} ref={containerRef}>
-      {mindarThree && <ThreeCanvas mindarThree={mindarThree} />}
+      {mindarThree && <ThreeCanvas mindarThree={mindarThree} socket={socket} />}
     </div>
   );
-};
-
-export default MindARThreeViewer;
+}

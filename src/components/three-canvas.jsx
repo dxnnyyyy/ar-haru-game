@@ -1,7 +1,7 @@
 import * as THREE from "three";
 
 const ThreeCanvas = (props) => {
-  const { mindarThree } = props;
+  const { mindarThree, socket } = props;
 
   const anchor = mindarThree.addAnchor(0);
 
@@ -78,7 +78,7 @@ const ThreeCanvas = (props) => {
   });
 
   const objects = [];
-  let player = "";
+  const player = socket.auth.player;
 
   // Click Eventlistener
   window.addEventListener("mousedown", (e) => {
@@ -95,20 +95,20 @@ const ThreeCanvas = (props) => {
         sphererClone.position.set(localSquarePos.x, localSquarePos.y, 0.25);
         anchor.group.add(sphererClone);
         objects.push(sphererClone);
-        player = "player2";
       } else if (player === "player2") {
         const sphereClone_2 = spherePlayer2.clone();
         sphereClone_2.position.set(localSquarePos.x, localSquarePos.y, 0.25);
         anchor.group.add(sphereClone_2);
         objects.push(sphereClone_2);
-        player = "player1";
-      } else {
-        player = "player1";
       }
     }
 
-    console.log(objects);
+    socket.emit("player-moved", {
+      player: socket.auth.player,
+      objects: objects,
+    });
   });
+
   return null;
 };
 
