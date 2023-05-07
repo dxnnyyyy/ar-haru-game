@@ -24,12 +24,13 @@ const ButtonContainer = styled.div`
 
 export default function CreateLobby(props) {
   const { socket } = props;
-  socket.auth = { player: "player1" };
+  const room = createRoomId(6);
+
+  socket.auth = { player: "player1", room: room };
   socket.connect();
 
   const navigate = useNavigate();
 
-  const room = createRoomId(6);
   socket.emit("room", room);
 
   socket.on("start-game-seq", (data) => {

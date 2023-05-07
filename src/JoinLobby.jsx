@@ -18,6 +18,9 @@ const Input = styled.input`
 `;
 
 function connectToLobby(socket, roomId) {
+  socket.auth = { player: "player2", room: roomId };
+  socket.connect();
+
   socket.emit("room", roomId);
 }
 
@@ -26,8 +29,6 @@ export default function JoinLobby(props) {
   const navigate = useNavigate();
 
   const { socket } = props;
-  socket.auth = { player: "player2" };
-  socket.connect();
 
   socket.on("start-game-seq", (data) => {
     if (data) {
