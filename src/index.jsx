@@ -45,7 +45,6 @@ const GlobalStyle = createGlobalStyle`
 `;
 
 const socket = io("http://localhost:8080", { autoConnect: false });
-console.log("root", socket);
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
