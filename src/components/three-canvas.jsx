@@ -1,56 +1,28 @@
 import * as THREE from "three";
+import {
+  plane,
+  grid,
+  square,
+  spherePlayer1,
+  spherePlayer2,
+} from "../Meshes.js";
 
-const ThreeCanvas = (props) => {
-  const { mindarThree, socket } = props;
-
+export default function ThreeCanvas({ mindarThree, socket }) {
   const anchor = mindarThree.addAnchor(0);
 
   const { camera, scene } = mindarThree;
 
   // Plane
-  const plane = new THREE.Mesh(
-    new THREE.PlaneGeometry(3, 3),
-    new THREE.MeshBasicMaterial({
-      side: THREE.DoubleSide,
-      visible: false,
-    })
-  );
   plane.name = "ground";
   anchor.group.add(plane);
 
   // Grid
-  const grid = new THREE.GridHelper(3, 3, "", "white");
   grid.rotation.x = Math.PI / 2;
   anchor.group.add(grid);
 
   // Square
-  const square = new THREE.Mesh(
-    new THREE.PlaneGeometry(1, 1),
-    new THREE.MeshBasicMaterial({
-      side: THREE.DoubleSide,
-    })
-  );
   square.name = "square";
   anchor.group.add(square);
-
-  // Spheres
-  const spherePlayer1 = new THREE.Mesh(
-    new THREE.SphereGeometry(0.25, 20, 10),
-    new THREE.MeshBasicMaterial({
-      side: THREE.DoubleSide,
-      wireframe: true,
-      color: "blue",
-    })
-  );
-
-  const spherePlayer2 = new THREE.Mesh(
-    new THREE.SphereGeometry(0.25, 20, 10),
-    new THREE.MeshBasicMaterial({
-      side: THREE.DoubleSide,
-      wireframe: true,
-      color: "red",
-    })
-  );
 
   const mousePos = new THREE.Vector2();
   const raycaster = new THREE.Raycaster();
@@ -79,6 +51,7 @@ const ThreeCanvas = (props) => {
 
   const objects = [];
   const player = socket.auth.player;
+  let currentPlayer = "player1";
 
   // Click Eventlistener
   window.addEventListener("mousedown", (e) => {
@@ -89,27 +62,45 @@ const ThreeCanvas = (props) => {
       );
     });
 
-    if (!objectExist) {
-      if (player === "player1") {
-        const sphererClone = spherePlayer1.clone();
-        sphererClone.position.set(localSquarePos.x, localSquarePos.y, 0.25);
-        anchor.group.add(sphererClone);
-        objects.push(sphererClone);
-      } else if (player === "player2") {
-        const sphereClone_2 = spherePlayer2.clone();
-        sphereClone_2.position.set(localSquarePos.x, localSquarePos.y, 0.25);
-        anchor.group.add(sphereClone_2);
-        objects.push(sphereClone_2);
+    if (currentPlayer === player) {
+      if (!objectExist) {
+        if (player === "player1") {
+          const sphereClone = spherePlayer1.clone();
+          sphereClone.position.set(localSquarePos.x, localSquarePos.y, 0.25);
+          anchor.group.add(sphereClone);
+          objects.push(sphereClone);
+          socket.emit("player-moved", {
+            sphere: sphereClone,
+            position: { x: localSquarePos.x, y: localSquarePos.y, z: 0.25 },
+          });
+        } else if (player === "player2") {
+          const sphereClone_2 = spherePlayer2.clone();
+          sphereClone_2.position.set(localSquarePos.x, localSquarePos.y, 0.25);
+          anchor.group.add(sphereClone_2);
+          objects.push(sphereClone_2);
+          socket.emit("player-moved", {
+            sphere: sphereClone_2,
+            position: { x: localSquarePos.x, y: localSquarePos.y, z: 0.25 },
+          });
+        }
       }
     }
-
-    socket.emit("player-moved", {
-      player: socket.auth.player,
-      objects: objects,
-    });
   });
 
-  return null;
-};
+  const loader = new THREE.ObjectLoader();
 
-export default ThreeCanvas;
+  socket.on("move-done", (data) => {
+    const object = loader.parse(data.sphere);
+    object.position.set(data.position.x, data.position.y, data.position.z);
+    anchor.group.add(object);
+    objects.push(object);
+  });
+
+  socket.on("switch-player", (data) => {
+    currentPlayer = data.currentPlayer;
+  });
+
+  socket.on("winner-detected", (data) => {
+    console.log("Winner: ", data);
+  });
+}
