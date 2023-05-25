@@ -23,7 +23,8 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "stuff": "npm run build && serve -s build --ssl-cert cert.pem --ssl-key key.pem "
+    "start:server": "node ./src/server/index.js",
+    "start:game": "npm run build && npm run start:server"
   },
   "eslintConfig": {
     "extends": [

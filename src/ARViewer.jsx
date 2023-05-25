@@ -100,7 +100,7 @@ export default function ARViewer({ socket }) {
     <>
       {currentPlayer}
       <a-scene
-        mindar-image="imageTargetSrc: /assets/targets_front.mind; filterMinCF:0.1; filterBeta: 10; warmupTolerance: 1; warmupTolerance: 1;"
+        mindar-image="imageTargetSrc: /assets/targets_front.mind; filterMinCF:0.001; filterBeta: 1000; warmupTolerance: 1; warmupTolerance: 5;"
         vr-mode-ui="enabled: false"
         color-space="sRGB"
         renderer="colorManagement: true, physicallyCorrectLights"
