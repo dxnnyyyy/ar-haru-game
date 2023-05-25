@@ -85,8 +85,7 @@ io.on("connection", (socket) => {
       io.to(socket.handshake.auth.room).emit("winner-detected", {
         player: player,
       });
-    }
-    if (moveCount === 5) {
+    } else if (moveCount === 5) {
       io.to(socket.handshake.auth.room).emit("winner-detected", {
         player: "draw",
       });
