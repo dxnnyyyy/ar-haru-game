@@ -2,6 +2,7 @@ import styled from "styled-components";
 import Headline from "./components/Headline";
 import { createRoomId } from "./utils";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 const LobbyCode = styled.div`
   display: flex;
@@ -15,11 +16,35 @@ const LobbyCode = styled.div`
   font-size: x-large;
 `;
 
+const PlayerContainer = styled.div`
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  height: 50vw;
+  width: 100%;
+`;
+
+const Player = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  width: 100%;
+  height: 100%;
+
+  font-size: 1.2rem;
+  font-weight: bold;
+`;
+
 const ButtonContainer = styled.div`
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translateX(-50%) translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 5rem;
+  width: 100%;
 `;
 
 const Button = styled.button`
@@ -37,14 +62,22 @@ const Button = styled.button`
 
 export default function CreateLobby(props) {
   const { socket } = props;
-  const room = createRoomId(4);
 
-  socket.auth = { player: "player1", room: room };
-  socket.connect();
-
+  const [didSeconPlayerJoin, setDidSeconPlayerJoin] = useState(false);
+  const [room, setRoom] = useState();
   const navigate = useNavigate();
 
-  socket.emit("room", room);
+  if (!didSeconPlayerJoin) {
+    if (!room) setRoom(createRoomId(4));
+
+    socket.auth = { player: "player1", room: room };
+    socket.connect();
+
+    socket.emit("room", room);
+  }
+  socket.on("second-player-joined", (data) => {
+    setDidSeconPlayerJoin(data);
+  });
 
   socket.on("start-game-seq", (data) => {
     if (data) {
@@ -56,16 +89,34 @@ export default function CreateLobby(props) {
     <>
       <Headline text="create lobby" />
       <LobbyCode>Lobby Code: {room}</LobbyCode>
+      <PlayerContainer>
+        <Player>
+          <p>You are:</p>
+          <p>Player 1 (Blue)</p>
+        </Player>
+        <Player>
+          {didSeconPlayerJoin ? (
+            <>
+              <p>Your opponent is:</p>
+              <p>Player 2 (Red)</p>
+            </>
+          ) : (
+            "Wait for opponent . . ."
+          )}
+        </Player>
+      </PlayerContainer>
 
-      <ButtonContainer>
-        <Button
-          onClick={() => {
-            socket.emit("start-game", room);
-          }}
-        >
-          start game
-        </Button>
-      </ButtonContainer>
+      {didSeconPlayerJoin && (
+        <ButtonContainer>
+          <Button
+            onClick={() => {
+              socket.emit("start-game", room);
+            }}
+          >
+            start game
+          </Button>
+        </ButtonContainer>
+      )}
     </>
   );
 }

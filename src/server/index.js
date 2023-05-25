@@ -22,8 +22,13 @@ io.on("connection", (socket) => {
 
   socket.on("room", (room) => {
     socket.join(room);
+
+    if (socket.handshake.auth.player === "player2") {
+      socket.to(room).emit("second-player-joined", true);
+    }
+
     console.log(
-      `${socket.handshake.auth.player} (${socket.id}) joind room ${room}`
+      `${socket.handshake.auth.player} (${socket.id}) joined room ${room}`
     );
   });
 

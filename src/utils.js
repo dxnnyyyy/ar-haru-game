@@ -13,6 +13,7 @@ export function createRoomId(length) {
   return result;
 }
 
+// render n x n tile grid
 export function renderTiles(n, handleTileClick) {
   const tiles = [];
   const offset = n % 2 === 0 ? n / 2 - 0.5 : Math.floor(n / 2);
