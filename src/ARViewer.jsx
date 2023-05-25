@@ -66,12 +66,11 @@ export default function ARViewer({ socket }) {
 
   socket.on("winner-detected", (data) => {
     if (data.player !== "draw") {
-      setWinner(`${data.player} won!`);
+      const winningPlayer = data.player === "player1" ? "Player 1" : "Player 2";
+      setWinner(`${winningPlayer} won!`);
     } else {
-      setWinner("DRAW!");
+      setWinner("DRAW! Nobody won :(");
     }
-
-    setWinner(data.player);
   });
 
   function renderTiles(n) {
@@ -107,7 +106,7 @@ export default function ARViewer({ socket }) {
     <>
       <div
         style={{
-          fontSize: "1.5rem",
+          fontSize: "1.2rem",
           fontWeight: "bold",
           color: "white",
           display: "flex",
