@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import LinkButton from "./components/LinkButton";
 
 export default function ARViewer({ socket }) {
   const [currentPlayer, setCurrentPlayer] = useState("player1");
@@ -104,10 +105,56 @@ export default function ARViewer({ socket }) {
 
   return (
     <>
-      <div>
-        {currentPlayer}
-        {winner}
+      <div
+        style={{
+          fontSize: "1.5rem",
+          fontWeight: "bold",
+          color: "white",
+          display: "flex",
+          flexDirection: "row",
+          flexWrap: "nowrap",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <div>You are: {player === "player1" ? "Player 1" : "Player 2"}</div>
+        <div>
+          Current player:{" "}
+          {currentPlayer === "player1" ? "Player 1" : "Player 2"}
+        </div>
       </div>
+
+      {winner && (
+        <div
+          style={{
+            position: "absolute",
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            zIndex: 1,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "2rem",
+              color: "white",
+              fontWeight: "bold",
+              marginBottom: "2rem",
+            }}
+          >
+            {winner}
+          </div>
+          <LinkButton
+            to="/"
+            text="Back to Main Menu"
+            onClick={socket.disconnect(true)}
+          />
+        </div>
+      )}
+
       <a-scene
         mindar-image="imageTargetSrc: /assets/targets_front.mind; filterMinCF:0.001; filterBeta: 1000; warmupTolerance: 1; warmupTolerance: 5;"
         vr-mode-ui="enabled: false"
