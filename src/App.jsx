@@ -7,7 +7,7 @@ const Image = styled.img`
   position: relative;
   left: 50%;
   transform: translateX(-50%);
-  height: 90vw;
+  height: 60vw;
   margin: 1rem 0;
 `;
 
@@ -23,7 +23,7 @@ export default function App() {
     <>
       <Headline text="AR Haru Tic-Tac-Toe" />
 
-      <Image src="https://via.placeholder.com/1080x1080/eee?text=1:1" alt="" />
+      <Image src="/images/haru_illu.svg" alt="" />
 
       <ButtonContainer>
         <LinkButton
