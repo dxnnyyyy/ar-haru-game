@@ -21,12 +21,13 @@ export default function ARViewer({ socket }) {
         }
         socket.emit("player-moved", {
           haruPosition: { x: position.x, y: position.y },
+          color: player === "player1" ? "blue" : "red",
         });
       }
     }
   }
 
-  function updateGame(position) {
+  function updateGame(position, color) {
     const haruExists = harus.find((haru) => {
       return haru.props.position === `${position.x} ${position.y} 0.1`;
     });
@@ -42,15 +43,16 @@ export default function ARViewer({ socket }) {
           scale="0.2 0.2 0.2"
         ></a-entity>,
       ]);
-      const tile = document.querySelector(
-        `#haru-${position.x}${position.y} > a-plane`
-      );
-      if (currentPlayer === "player2") {
-        tile.setAttribute("color", "blue");
-      }
-      if (currentPlayer === "player1") {
-        tile.setAttribute("color", "red");
-      }
+      document
+        .querySelector(`#haru-${position.x}${position.y} > a-plane`)
+        .setAttribute("color", color);
+
+      // if (currentPlayer === "player2") {
+      //   tile.setAttribute("color", "blue");
+      // }
+      // if (currentPlayer === "player1") {
+      //   tile.setAttribute("color", "red");
+      // }
 
       return true;
     } else {
@@ -64,7 +66,7 @@ export default function ARViewer({ socket }) {
   });
 
   socket.on("move-done", (data) => {
-    updateGame(data.haruPosition);
+    updateGame(data.haruPosition, data.color);
   });
 
   function renderTiles(n) {
@@ -80,7 +82,7 @@ export default function ARViewer({ socket }) {
           >
             <a-plane
               color="white"
-              opaciy="0.25"
+              opacity="0.66"
               position={`${i - offset} ${j - offset} 0`}
               width="0.8"
               height="0.8"

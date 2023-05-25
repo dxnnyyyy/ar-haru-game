@@ -90,6 +90,7 @@ io.on("connection", (socket) => {
 
     socket.to(socket.handshake.auth.room).emit("move-done", {
       haruPosition: data.haruPosition,
+      color: data.color,
     });
   });
 
