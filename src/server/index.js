@@ -55,38 +55,38 @@ io.on("connection", (socket) => {
       currentPlayer: currentPlayer,
     });
 
-    // if (moveCount >= 3) {
-    //   if (
-    //     (gamefield[0][0] == player &&
-    //       gamefield[0][1] == player &&
-    //       gamefield[0][2] == player) ||
-    //     (gamefield[1][0] == player &&
-    //       gamefield[1][1] == player &&
-    //       gamefield[1][2] == player) ||
-    //     (gamefield[2][0] == player &&
-    //       gamefield[2][1] == player &&
-    //       gamefield[2][2] == player) ||
-    //     (gamefield[0][2] == player &&
-    //       gamefield[1][2] == player &&
-    //       gamefield[2][2] == player) ||
-    //     (gamefield[0][1] == player &&
-    //       gamefield[1][1] == player &&
-    //       gamefield[2][1] == player) ||
-    //     (gamefield[0][0] == player &&
-    //       gamefield[1][0] == player &&
-    //       gamefield[2][0] == player) ||
-    //     (gamefield[0][0] == player &&
-    //       gamefield[1][1] == player &&
-    //       gamefield[2][2] == player) ||
-    //     (gamefield[0][2] == player &&
-    //       gamefield[1][1] == player &&
-    //       gamefield[2][0] == player)
-    //   ) {
-    //     io.to(socket.handshake.auth.room).emit("winner-detected", {
-    //       player: player,
-    //     });
-    //   }
-    // }
+    if (moveCount >= 3) {
+      if (
+        (gamefield[0][0] === player &&
+          gamefield[0][1] === player &&
+          gamefield[0][2] === player) ||
+        (gamefield[1][0] === player &&
+          gamefield[1][1] === player &&
+          gamefield[1][2] === player) ||
+        (gamefield[2][0] === player &&
+          gamefield[2][1] === player &&
+          gamefield[2][2] === player) ||
+        (gamefield[0][2] === player &&
+          gamefield[1][2] === player &&
+          gamefield[2][2] === player) ||
+        (gamefield[0][1] === player &&
+          gamefield[1][1] === player &&
+          gamefield[2][1] === player) ||
+        (gamefield[0][0] === player &&
+          gamefield[1][0] === player &&
+          gamefield[2][0] === player) ||
+        (gamefield[0][0] === player &&
+          gamefield[1][1] === player &&
+          gamefield[2][2] === player) ||
+        (gamefield[0][2] === player &&
+          gamefield[1][1] === player &&
+          gamefield[2][0] === player)
+      ) {
+        io.to(socket.handshake.auth.room).emit("winner-detected", {
+          player: player,
+        });
+      }
+    }
 
     socket.to(socket.handshake.auth.room).emit("move-done", {
       haruPosition: data.haruPosition,

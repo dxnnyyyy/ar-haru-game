@@ -3,6 +3,7 @@ import React, { useState } from "react";
 export default function ARViewer({ socket }) {
   const [currentPlayer, setCurrentPlayer] = useState("player1");
   const [harus, setHarus] = useState([]);
+  const [winner, setWinner] = useState("");
 
   const player = socket.auth.player;
 
@@ -47,13 +48,6 @@ export default function ARViewer({ socket }) {
         .querySelector(`#haru-${position.x}${position.y} > a-plane`)
         .setAttribute("color", color);
 
-      // if (currentPlayer === "player2") {
-      //   tile.setAttribute("color", "blue");
-      // }
-      // if (currentPlayer === "player1") {
-      //   tile.setAttribute("color", "red");
-      // }
-
       return true;
     } else {
       console.log("There is already a Haru on this tile!");
@@ -67,6 +61,10 @@ export default function ARViewer({ socket }) {
 
   socket.on("move-done", (data) => {
     updateGame(data.haruPosition, data.color);
+  });
+
+  socket.on("winner-detected", (data) => {
+    setWinner(data.player);
   });
 
   function renderTiles(n) {
@@ -100,7 +98,10 @@ export default function ARViewer({ socket }) {
 
   return (
     <>
-      {currentPlayer}
+      <div>
+        {currentPlayer}
+        {winner && `${winner} won!`}
+      </div>
       <a-scene
         mindar-image="imageTargetSrc: /assets/targets_front.mind; filterMinCF:0.001; filterBeta: 1000; warmupTolerance: 1; warmupTolerance: 5;"
         vr-mode-ui="enabled: false"
