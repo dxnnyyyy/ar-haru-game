@@ -64,6 +64,12 @@ export default function ARViewer({ socket }) {
   });
 
   socket.on("winner-detected", (data) => {
+    if (data.player !== "draw") {
+      setWinner(`${data.player} won!`);
+    } else {
+      setWinner("DRAW!");
+    }
+
     setWinner(data.player);
   });
 
@@ -100,7 +106,7 @@ export default function ARViewer({ socket }) {
     <>
       <div>
         {currentPlayer}
-        {winner && `${winner} won!`}
+        {winner}
       </div>
       <a-scene
         mindar-image="imageTargetSrc: /assets/targets_front.mind; filterMinCF:0.001; filterBeta: 1000; warmupTolerance: 1; warmupTolerance: 5;"
