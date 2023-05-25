@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import LinkButton from "./components/LinkButton";
+import { renderTiles, formatPlayerString } from "./utils";
 
 export default function ARViewer({ socket }) {
   const [currentPlayer, setCurrentPlayer] = useState("player1");
@@ -66,41 +67,12 @@ export default function ARViewer({ socket }) {
 
   socket.on("winner-detected", (data) => {
     if (data.player !== "draw") {
-      const winningPlayer = data.player === "player1" ? "Player 1" : "Player 2";
+      const winningPlayer = formatPlayerString(data.player);
       setWinner(`${winningPlayer} won!`);
     } else {
       setWinner("DRAW! Nobody won :(");
     }
   });
-
-  function renderTiles(n) {
-    const tiles = [];
-    const offset = n % 2 === 0 ? n / 2 - 0.5 : Math.floor(n / 2);
-    for (let i = 0; i < n; i++) {
-      for (let j = 0; j < n; j++) {
-        tiles.push(
-          <a-entity
-            key={`${i}${j}`}
-            id={`haru-${i - offset}${j - offset}`}
-            onClick={handleTileClick}
-          >
-            <a-plane
-              color="white"
-              opacity="0.66"
-              position={`${i - offset} ${j - offset} 0`}
-              width="0.8"
-              height="0.8"
-              rotation="0 0 0"
-              class="clickable"
-              animation="property: scale; to: 1.2 1.2 1.2; dur: 2500; easing: easeInOutQuad; loop: true; dir: alternate"
-            ></a-plane>
-          </a-entity>
-        );
-      }
-    }
-
-    return tiles;
-  }
 
   return (
     <>
@@ -116,11 +88,8 @@ export default function ARViewer({ socket }) {
           alignItems: "center",
         }}
       >
-        <div>You are: {player === "player1" ? "Player 1" : "Player 2"}</div>
-        <div>
-          Current player:{" "}
-          {currentPlayer === "player1" ? "Player 1" : "Player 2"}
-        </div>
+        <div>You are: {formatPlayerString(player)}</div>
+        <div>Current player: {formatPlayerString(currentPlayer)}</div>
       </div>
 
       {winner && (
@@ -169,7 +138,7 @@ export default function ARViewer({ socket }) {
         ></a-camera>
 
         <a-entity mindar-image-target="targetIndex: 0">
-          {renderTiles(3)}
+          {renderTiles(3, handleTileClick)}
           {harus}
         </a-entity>
       </a-scene>
