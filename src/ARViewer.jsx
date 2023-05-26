@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import LinkButton from "./components/LinkButton";
+import Button from "./components/Button";
 import { renderTiles, formatPlayerString } from "./utils";
 
 export default function ARViewer({ socket }) {
@@ -115,16 +115,14 @@ export default function ARViewer({ socket }) {
           >
             {winner}
           </div>
-          <LinkButton
-            to="/"
-            text="Back to Main Menu"
-            onClick={socket.disconnect(true)}
-          />
+          <Button to="/" onClick={() => socket.disconnect(true)}>
+            Back to Main Menu
+          </Button>
         </div>
       )}
 
       <a-scene
-        mindar-image="imageTargetSrc: /assets/targets_front.mind; filterMinCF:0.001; filterBeta: 2000; warmupTolerance: 1; missTolerance: 10;"
+        mindar-image="imageTargetSrc: /assets/targets_front.mind; filterMinCF:0.001; filterBeta: 2500; warmupTolerance: 3; missTolerance: 10;"
         vr-mode-ui="enabled: false"
         color-space="sRGB"
         renderer="colorManagement: true, physicallyCorrectLights"
