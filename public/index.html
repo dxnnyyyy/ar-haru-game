@@ -18,6 +18,445 @@
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
+    <script>
+      AFRAME.registerComponent("haru", {
+        init: function () {
+          console.log(this);
+
+          this.defaultEmotion = `
+          0000000000000000000
+          0000000000000000000
+          0011000000000001100
+          0011010000000101100
+          0000011111111100000
+          0000000000000000000
+          0000000000000000000
+        `;
+
+          this.colorMap = new THREE.TextureLoader().load(
+            "textures/colorMap.png"
+          );
+          this.colorMap.flipY = false;
+
+          this.metalMatcap = new THREE.TextureLoader().load(
+            "textures/metalMatcap.png"
+          );
+          this.metalMatcap.flipY = false;
+
+          this.basicMaterial = new THREE.ShaderMaterial({
+            fragmentShader: `
+            varying vec2 vUv;
+            varying float vDistToCamera;
+            varying vec3 vViewPosition;
+
+            uniform sampler2D uColorMap;
+            uniform sampler2D uEnvMap;
+            uniform mat3 normalMatrix;
+            uniform float uTime;
+            uniform vec3 uFresnelColor;
+            uniform vec3 uSpecularColor;
+
+            #include <common>
+            #include <packing>
+            #include <normal_pars_fragment>
+
+            #define LIGHT_DIR vec3(-0.2721655269759087, 0.6804138174397717, 0.6804138174397717)
+
+            vec3 addMetalness(vec3 color, float intensity, vec3 normal, vec3 viewDir) {
+
+              vec3 x = normalize( vec3( viewDir.z, 0.0, - viewDir.x ) );
+              vec3 y = cross( viewDir, x );
+              vec2 uv = vec2( dot( x, normal ), dot( y, normal ) ) * 0.495 + 0.5;
+              vec4 matcapColor = texture2D( uEnvMap, uv );
+
+                return mix(color, matcapColor.rgb, intensity);
+            }
+
+            void main() {
+                #include <normal_fragment_begin>
+
+                vec3 viewDir = normalize( vViewPosition );
+                vec3 color =  texture2D(uColorMap, vUv).rgb;
+
+                //metalness
+                float metalness = step(0.875, vUv.y) * .65;
+                color = addMetalness(color, metalness, geometryNormal, viewDir);
+
+                //point light
+                vec3 transformedNormal = normalize( normalMatrix * vNormal );
+                float angle = 1. - dot(transformedNormal, LIGHT_DIR);
+                float darkness = 1. - (angle / PI) * .35;
+                color *= darkness;
+
+                //specular
+                vec3 lightDir = normalize(LIGHT_DIR);
+                vec3 reflectDir = reflect(-lightDir, transformedNormal);
+                float specular = pow(max(dot(viewDir, reflectDir), 0.0), 2.0);
+                color = mix(color, uSpecularColor, specular * 0.2);
+
+                //fresnel
+                float fresnel = pow(1. - dot(transformedNormal, viewDir), 4.);
+                color = mix(color, uFresnelColor, fresnel * 0.2);
+
+                gl_FragColor = vec4(color, 1.);
+            }
+            `,
+            vertexShader: `
+              varying vec2 vUv;
+              varying vec3 vNormal;
+              varying vec3 vWorldPosition;
+              varying float vDistToCamera;
+              varying vec3 vViewPosition;
+
+              uniform float uTime;
+
+              #include <common>
+              #include <shadowmap_pars_vertex>
+
+              void main() {
+                #include <beginnormal_vertex>
+                #include <defaultnormal_vertex>
+                #include <normal_vertex>
+                #include <begin_vertex>
+                #include <project_vertex>
+                  #include <worldpos_vertex>
+
+                  vec4 modelPosition = modelMatrix * vec4(position, 1.0);
+
+                  //wind
+                  float windStrength = (step(0.75, uv.y) * step(uv.y, 0.875)) * 2.5 * modelPosition.y * 0.01;
+                  modelPosition.x += sin(uTime + modelPosition.y * 0.5) * windStrength;
+
+                  vec4 viewPosition = viewMatrix * modelPosition;
+                  vec4 projectedPosition = projectionMatrix * viewPosition;
+
+                  gl_Position = projectedPosition;
+
+                  vUv = uv;
+                  vNormal = normal;
+                  vDistToCamera = gl_Position.w;
+                  vViewPosition = - mvPosition.xyz;
+              }`,
+            uniforms: {
+              uColorMap: { value: this.colorMap },
+              uEnvMap: { value: this.metalMatcap },
+              uSpecularColor: { value: new THREE.Color(0xffffff) },
+              uFresnelColor: { value: new THREE.Color(0xbdfffb) },
+            },
+          });
+
+          this.eyeMaterial = new THREE.ShaderMaterial({
+            fragmentShader: `
+            varying float vDistToCamera;
+            varying vec2 vUv;
+
+            uniform float irisRadius;
+            uniform float pupilRadius;
+            uniform float topLidDent;
+            uniform float topLidOffset;
+            uniform float bottomLidDent;
+            uniform float bottomLidOffset;
+            uniform vec2 pupilPosition;
+            uniform vec3 uIrisColor0;
+            uniform vec3 uIrisColor1;
+            uniform float uBlendOpacity;
+            uniform vec3 uBlendColor;
+            uniform float uEyeRotation;
+            uniform float uStripesX;
+
+            #define BACKGROUND_COLOR mix(vec3(0.11,0.196,0.255), vec3(0.184,0.278,0.357), vUv.y)
+            #define PI 3.1415926535897932384626433832795
+
+            vec4 circleShape(float radius, vec2 position, vec4 color) {
+                float d = distance(position, vUv);
+                float circle = smoothstep(radius, radius - 0.01, d);
+                vec4 coloredCircle = mix(vec4(0.0), color, circle);
+                return coloredCircle;
+            }
+
+            vec2 getPupilPosition(float multiplyBy) {
+                vec2 rPosition = mix(vec2(0.5), pupilPosition, multiplyBy);
+                return rPosition;
+            }
+
+            vec4 Eye() {
+                vec4 irisOutline = circleShape(irisRadius, getPupilPosition(.7), vec4(1., 1., 1., clamp(20. - vDistToCamera, 0., .7))); //hide outline when camera is far away
+                vec4 irisColor = vec4(mix(uIrisColor0, uIrisColor1, smoothstep(pupilRadius, irisRadius, distance(getPupilPosition(.9), vUv))), 1.);
+                vec4 iris = circleShape(irisRadius - .015, getPupilPosition(.7), irisColor);
+                iris = mix(irisOutline, iris, iris.a);
+
+                vec4 pupil = circleShape(pupilRadius, pupilPosition, vec4(BACKGROUND_COLOR, 1.));
+
+                vec2 shinePosition = getPupilPosition(.6);
+                shinePosition.x += 0.1;
+                shinePosition.y -= 0.1;
+                vec4 shine = circleShape(irisRadius * .3, shinePosition, vec4(1.0, 1.0, 1.0, .3));
+
+                vec4 eye = mix(iris, pupil, pupil.a);
+                return mix(eye, shine, shine.a);
+            }
+
+            vec4 lidShape(float radius, vec2 position) {
+                float d = distance(position, vUv);
+                float circle = smoothstep( radius - 0.01, radius, d);
+                vec4 coloredCircle = mix(vec4(BACKGROUND_COLOR, 1.), vec4(BACKGROUND_COLOR, .0), circle);
+                return coloredCircle;
+            }
+
+            vec4 TopLid() {
+                float x = vUv.x;
+                float y = sin(x * PI) * -topLidDent + topLidOffset;
+                vec4 lid = lidShape(.5, vec2(x, y));
+                return lid;
+            }
+
+            vec4 BottomLid() {
+                float x = vUv.x;
+                float y = sin(x * PI) * bottomLidDent + 1. + bottomLidOffset;
+                vec4 lid = lidShape(.5, vec2(x, y));
+                return lid;
+            }
+
+            vec4 BlendBg() {
+                float bgStrength = distance(vec2(0.5, .1), vUv);
+                vec4 blendBg = mix(vec4(1.), vec4(uBlendColor, 1.), bgStrength);
+                return blendBg;
+            }
+
+            vec2 rotate(vec2 uv, float rotation, vec2 mid)
+            {
+                return vec2(
+                  cos(rotation) * (uv.x - mid.x) + sin(rotation) * (uv.y - mid.y) + mid.x,
+                  cos(rotation) * (uv.y - mid.y) - sin(rotation) * (uv.x - mid.x) + mid.y
+                );
+            }
+
+            vec4 BlendStripes() {
+                vec2 rotatedUv = rotate(vUv, uEyeRotation - .35, vec2(0.5, 0.5));
+                float stripeStrength = smoothstep(.0 + uStripesX, .05 + uStripesX, rotatedUv.x);
+                stripeStrength -= smoothstep(.225 + uStripesX, .275 + uStripesX, rotatedUv.x);
+                stripeStrength += smoothstep(.35 + uStripesX, .4 + uStripesX, rotatedUv.x);
+                stripeStrength -= smoothstep(.45 + uStripesX, .5 + uStripesX, rotatedUv.x);
+                stripeStrength *= distance(vec2(0.3, .1), vUv) + 0.35;
+                vec4 stripes = mix(vec4(0.), vec4(1.), stripeStrength * .2);
+                return stripes;
+            }
+
+            void main() {
+                vec4 color = vec4(BACKGROUND_COLOR,  1.);
+                vec4 eye = Eye();
+                vec4 topLid = TopLid();
+                vec4 bottomLid = BottomLid();
+                vec4 blendBg = BlendBg();
+                vec4 blendStripes = BlendStripes();
+
+                color = mix(color, eye, eye.a);
+                color = mix(color, vec4(BACKGROUND_COLOR, 1.), topLid.a);
+                color = mix(color, vec4(BACKGROUND_COLOR, 1.), bottomLid.a);
+                color = mix(color, blendBg, uBlendOpacity);
+                color = mix(color, blendStripes, blendStripes.a * uBlendOpacity);
+
+                gl_FragColor = color;
+            }
+            `,
+            vertexShader: `
+            varying vec2 vUv;
+            varying float vDistToCamera;
+
+            void main() {
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+
+                vUv = uv;
+                vDistToCamera = gl_Position.w;
+            }
+            `,
+            uniforms: {
+              uIrisColor0: { value: new THREE.Color(0xffff7a) },
+              uIrisColor1: { value: new THREE.Color(0x64e36c) },
+              irisRadius: { value: 0.28 },
+              pupilPosition: { value: new THREE.Vector2(0.5, 0.5) },
+              pupilRadius: { value: 0.14 },
+              topLidDent: { value: 1 },
+              topLidOffset: { value: 0 },
+              bottomLidDent: { value: 1 },
+              bottomLidOffset: { value: 0 },
+              uBlendOpacity: { value: 1 },
+              uBlendColor: { value: new THREE.Color(0x5bc2c1) },
+              uEyeRotation: { value: 0 },
+              uStripesX: { value: -0.3 },
+            },
+          });
+
+          this.canvas = document.createElement("canvas");
+          this.canvas.width = 512;
+          this.canvas.height = 512;
+          this.context = this.canvas.getContext("2d");
+          this.mouthMaterial = new THREE.MeshBasicMaterial({
+            map: new THREE.CanvasTexture(this.canvas),
+            transparent: true,
+          });
+
+          this.el.addEventListener("model-loaded", () => this.update());
+        },
+        update: function () {
+          const mesh = this.el.getObject3D("mesh");
+          if (mesh) {
+            rig = {};
+            rig.base = new THREE.Group();
+
+            mesh.traverse((child) => {
+              if (child.isMesh) {
+                child.material = this.basicMaterial;
+
+                switch (child.name) {
+                  case "eye-left":
+                    child.material = this.eyeMaterial;
+                    rig.eyeLeft = child;
+                    break;
+                  case "eye-left-rotation":
+                    rig.eyeLeft = child;
+                    break;
+                  case "eye-right":
+                    child.material = this.eyeMaterial;
+                    rig.eyeRight = child;
+                    break;
+                  case "eye-right-inner":
+                    break;
+                  case "eye-right-rotation":
+                    rig.eyeRight = child;
+                    break;
+                  case "hold":
+                    rig.hold = child;
+                    break;
+                  case "foot":
+                    rig.foot = child;
+                    break;
+                  case "mouth":
+                    child.material = this.mouthMaterial;
+                    rig.mouth = child;
+                    break;
+                  case "eye-hold":
+                    rig.eyeHold = child;
+                    break;
+                }
+              }
+            });
+
+            // mouth stuff
+            this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            const grid = this.defaultEmotion.split("");
+            const cleanGrid = [];
+            for (let i = 0; i < grid.length; i++) {
+              if (grid[i] === "1" || grid[i] === "0") {
+                cleanGrid.push(grid[i]);
+              }
+            }
+
+            for (let i = 0; i < cleanGrid.length; i++) {
+              if (cleanGrid[i] === "1") {
+                const row = Math.floor(i / 19);
+                const column = i % 19;
+
+                const x = 30 + column * 10 + column * 15;
+                const y = 40 + row * 10 + row * 15;
+
+                const radgrad = this.context.createRadialGradient(
+                  x,
+                  y,
+                  0,
+                  x,
+                  y,
+                  35
+                );
+                radgrad.addColorStop(0, "#aeff00" + "33");
+                radgrad.addColorStop(1, "#aeff00" + "00");
+                this.context.fillStyle = radgrad;
+                this.context.fillRect(
+                  0,
+                  0,
+                  this.canvas.width,
+                  this.canvas.height
+                );
+              }
+            }
+
+            for (let i = 0; i < cleanGrid.length; i++) {
+              if (cleanGrid[i] === "1") {
+                const row = Math.floor(i / 19);
+                const column = i % 19;
+
+                const x = 30 + column * 10 + column * 15;
+                const y = 40 + row * 10 + row * 15;
+
+                this.context.beginPath();
+                this.context.arc(x, y, 10, 0, 2 * Math.PI, false);
+                this.context.fillStyle = "#e7ffb3";
+                this.context.fill();
+              }
+            }
+
+            rig.eyeLeft.rotation.z = -0.25;
+            rig.eyeRight.rotation.z = 0.25;
+
+            function map(number, inMin, inMax, outMin, outMax) {
+              return (
+                ((number - inMin) * (outMax - outMin)) / (inMax - inMin) +
+                outMin
+              );
+            }
+
+            const cameraDirection = this.el.sceneEl.camera.getWorldDirection(
+              new THREE.Vector3()
+            );
+            cameraDirection.y = 0.1;
+
+            const leftEyeDirection = rig.eyeLeft.getWorldDirection(
+              new THREE.Vector3()
+            );
+            leftAngleToCamera = leftEyeDirection.angleTo(cameraDirection);
+            rig.eyeLeft.material.uniforms.uBlendOpacity.value = Math.min(
+              Math.max(map(leftAngleToCamera, 0, Math.PI, 0.9, 0.08), 0),
+              1
+            );
+            rig.eyeLeft.material.uniforms.uStripesX.value = map(
+              leftAngleToCamera,
+              0,
+              Math.PI,
+              -0.5,
+              0.5
+            );
+
+            const rightEyeDirection = rig.eyeRight.getWorldDirection(
+              new THREE.Vector3()
+            );
+            rightAngleToCamera = rightEyeDirection.angleTo(cameraDirection);
+            rig.eyeRight.material.uniforms.uBlendOpacity.value = Math.min(
+              Math.max(map(rightAngleToCamera, 0, Math.PI, 0.9, 0.08), 0),
+              1
+            );
+            rig.eyeRight.material.uniforms.uStripesX.value = map(
+              rightAngleToCamera,
+              0,
+              Math.PI,
+              -0.5,
+              0.5
+            );
+
+            rig.eyeLeft.material.uniforms.uEyeRotation.value =
+              rig.eyeLeft.rotation.z;
+            rig.eyeRight.material.uniforms.uEyeRotation.value =
+              rig.eyeRight.rotation.z;
+
+            mesh.position.set(0, 0, 0);
+
+            rig.base.add(rig.foot);
+            rig.base.add(rig.hold);
+
+            mesh.add(rig.base);
+          }
+        },
+      });
+    </script>
     <div id="root"></div>
   </body>
 </html>

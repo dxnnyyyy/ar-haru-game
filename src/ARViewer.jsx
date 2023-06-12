@@ -41,6 +41,7 @@ export default function ARViewer({ socket }) {
         <a-entity
           key={`haru-${position.x}-${position.y}`}
           gltf-model="url(/models/haru.glb)"
+          haru
           position={`${position.x} ${position.y} 0.1`}
           rotation="90 0 0"
           scale="0.2 0.2 0.2"
